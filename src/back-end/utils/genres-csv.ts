@@ -33,9 +33,7 @@ export function parseGenresCsv(csv: string): Genre[] {
       throw error;
     }
 
-    throw new Error(
-      `CSV des genres invalide : ${error instanceof Error ? error.message : String(error)}`,
-    );
+    throw new Error(`CSV des genres invalide : ${String(error)}`);
   }
 
   if (records.length === 0) {
