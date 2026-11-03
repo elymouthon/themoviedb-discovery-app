@@ -1,4 +1,6 @@
-import { resolve } from 'node:path';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const DEFAULT_DATABASE_PATH = '/tmp/movies-default.sqlite';
@@ -7,10 +9,17 @@ const closeMock = vi.fn();
 const getDatabaseMock = vi.fn(() => ({
   close: closeMock,
 }));
+const upsertGenresMock = vi.fn();
+const deleteUnusedGenresMock = vi.fn();
 
 vi.mock('./database/schema.ts', () => ({
   DEFAULT_DATABASE_PATH,
   getDatabase: getDatabaseMock,
+}));
+
+vi.mock('./database/genre-repository.ts', () => ({
+  deleteUnusedGenres: deleteUnusedGenresMock,
+  upsertGenres: upsertGenresMock,
 }));
 
 /**
@@ -42,7 +51,7 @@ describe('backend-cli.ts', () => {
         expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
         expect(closeMock).toHaveBeenCalledOnce();
         expect(logSpy).toHaveBeenCalledWith(
-          `Database available at ${resolve(DEFAULT_DATABASE_PATH)}`,
+          `Base de données disponible : ${resolve(DEFAULT_DATABASE_PATH)}`,
         );
       } finally {
         logSpy.mockRestore();
@@ -58,11 +67,73 @@ describe('backend-cli.ts', () => {
         expect(getDatabaseMock).toHaveBeenCalledWith(customDatabasePath);
         expect(closeMock).toHaveBeenCalledOnce();
         expect(logSpy).toHaveBeenCalledWith(
-          `Database available at ${resolve(customDatabasePath)}`,
+          `Base de données disponible : ${resolve(customDatabasePath)}`,
         );
       } finally {
         logSpy.mockRestore();
       }
     });
+  });
+
+  it('importe un CSV après validation et ferme la base sélectionnée', async () => {
+    // Arrange
+    const directory = mkdtempSync(join(tmpdir(), 'genres-cli-'));
+    const csvPath = join(directory, 'genres.csv');
+    const databasePath = join(directory, 'movies.sqlite');
+    writeFileSync(csvPath, 'id,name\n18,Drame\n35,Comédie\n');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Act
+    try {
+      await runCliWithArgs(['--path', databasePath, 'add-genres', csvPath]);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(databasePath);
+      expect(upsertGenresMock).toHaveBeenCalledWith(expect.anything(), [
+        { id: 18, name: 'Drame' },
+        { id: 35, name: 'Comédie' },
+      ]);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `2 genre(s) importé(s) dans ${resolve(databasePath)}`,
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('valide le CSV avant d’ouvrir la base', async () => {
+    // Arrange
+    const directory = mkdtempSync(join(tmpdir(), 'genres-cli-'));
+    const csvPath = join(directory, 'genres.csv');
+    writeFileSync(csvPath, 'code,name\n18,Drame\n');
+
+    // Act et assert
+    await expect(runCliWithArgs(['add-genres', csvPath])).rejects.toThrow(
+      'en-têtes',
+    );
+    expect(getDatabaseMock).not.toHaveBeenCalled();
+  });
+
+  it('supprime les genres inutilisés et affiche le nombre supprimé', async () => {
+    // Arrange
+    const databasePath = './data/custom-movies.sqlite';
+    deleteUnusedGenresMock.mockReturnValueOnce(3);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Act
+    try {
+      await runCliWithArgs(['--path', databasePath, 'clean-genres']);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(databasePath);
+      expect(deleteUnusedGenresMock).toHaveBeenCalledWith(expect.anything());
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `3 genre(s) supprimé(s) depuis ${resolve(databasePath)}`,
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });
