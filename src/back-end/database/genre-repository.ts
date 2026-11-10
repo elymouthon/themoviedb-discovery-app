@@ -45,3 +45,13 @@ export function upsertGenres(
     throw error;
   }
 }
+
+export function deleteUnusedGenres(database: DatabaseSync): number {
+  const result = database
+    .prepare(
+      'DELETE FROM genres WHERE NOT EXISTS (SELECT 1 FROM movie_genres WHERE movie_genres.genre_id = genres.id)',
+    )
+    .run();
+
+  return Number(result.changes);
+}

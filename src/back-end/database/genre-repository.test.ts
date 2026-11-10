@@ -2,7 +2,12 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { initializeSchema } from './schema';
-import { getGenreById, getGenres, upsertGenres } from './genre-repository';
+import {
+  deleteUnusedGenres,
+  getGenreById,
+  getGenres,
+  upsertGenres,
+} from './genre-repository';
 
 describe('genre-repository.ts', () => {
   const databases: DatabaseSync[] = [];
@@ -90,5 +95,31 @@ describe('genre-repository.ts', () => {
     expect(() =>
       upsertGenres(database, [{ id: 35, name: null as unknown as string }]),
     ).toThrow(/NOT NULL constraint failed/);
+  });
+
+  it('deletes only genres that are not associated with a movie', () => {
+    // Arrange
+    const database = createDatabase();
+    upsertGenres(database, [
+      { id: 18, name: 'Drame' },
+      { id: 35, name: 'Comédie' },
+    ]);
+    database
+      .prepare(
+        `INSERT INTO movies (
+          id, title, original_title, original_language, overview, collected_at
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(1, 'Film', 'Movie', 'fr', 'Résumé', '2026-11-03');
+    database
+      .prepare('INSERT INTO movie_genres (movie_id, genre_id) VALUES (?, ?)')
+      .run(1, 18);
+
+    // Act
+    const deletedCount = deleteUnusedGenres(database);
+
+    // Assert
+    expect(deletedCount).toBe(1);
+    expect(getGenres(database)).toEqual([{ id: 18, name: 'Drame' }]);
   });
 });
