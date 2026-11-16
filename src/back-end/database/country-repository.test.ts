@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { initializeSchema } from './schema';
 import {
+  deleteUnusedCountries,
   getCountries,
   getCountryByCode,
   upsertCountries,
@@ -105,5 +106,33 @@ describe('country-repository.ts', () => {
       ]),
     ).toThrow(/NOT NULL constraint failed/);
     expect(getCountries(database)).toEqual([]);
+  });
+
+  it('deletes only countries that are not associated with a movie', () => {
+    // Arrange
+    const database = createDatabase();
+    upsertCountries(database, [
+      { code: 'FR', name: 'France' },
+      { code: 'US', name: 'United States' },
+    ]);
+    database
+      .prepare(
+        `INSERT INTO movies (
+          id, title, original_title, original_language, overview, collected_at
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(1, 'Film', 'Movie', 'fr', 'Résumé', '2026-11-16');
+    database
+      .prepare(
+        'INSERT INTO production_countries (movie_id, country_code) VALUES (?, ?)',
+      )
+      .run(1, 'FR');
+
+    // Act
+    const deletedCount = deleteUnusedCountries(database);
+
+    // Assert
+    expect(deletedCount).toBe(1);
+    expect(getCountries(database)).toEqual([{ code: 'FR', name: 'France' }]);
   });
 });

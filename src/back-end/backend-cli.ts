@@ -4,9 +4,14 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DEFAULT_DATABASE_PATH, getDatabase } from './database/schema.ts';
 import {
+  deleteUnusedCountries,
+  upsertCountries,
+} from './database/country-repository.ts';
+import {
   deleteUnusedGenres,
   upsertGenres,
 } from './database/genre-repository.ts';
+import { parseCountriesCsv } from './utils/countries-csv.ts';
 import { parseGenresCsv } from './utils/genres-csv.ts';
 
 /** Command-line interface for movie database operations. */
@@ -64,6 +69,44 @@ program
 
     console.log(
       `${deletedCount} genre(s) supprimé(s) depuis ${resolve(databasePath)}`,
+    );
+  });
+
+program
+  .command('add-countries <csv-file>')
+  .description('Importe ou actualise les pays depuis un fichier CSV')
+  .action((csvFile: string) => {
+    const countries = parseCountriesCsv(readFileSync(resolve(csvFile), 'utf8'));
+    const databasePath = getDatabasePath();
+    const database = getDatabase(databasePath);
+
+    try {
+      upsertCountries(database, countries);
+    } finally {
+      database.close();
+    }
+
+    console.log(
+      `${countries.length} pays importé(s) dans ${resolve(databasePath)}`,
+    );
+  });
+
+program
+  .command('clean-countries')
+  .description('Supprime les pays inutilisés')
+  .action(() => {
+    const databasePath = getDatabasePath();
+    const database = getDatabase(databasePath);
+    let deletedCount: number;
+
+    try {
+      deletedCount = deleteUnusedCountries(database);
+    } finally {
+      database.close();
+    }
+
+    console.log(
+      `${deletedCount} pays supprimé(s) depuis ${resolve(databasePath)}`,
     );
   });
 

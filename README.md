@@ -84,6 +84,31 @@ npx tsx src/back-end/backend-cli.ts clean-genres
 La commande conserve les genres associés à un film et affiche le nombre de genres
 importés ou supprimés ainsi que le chemin de la base utilisée.
 
+## Import et nettoyage des pays
+
+Le fichier CSV des pays doit contenir exactement les colonnes `code` et `name`.
+Les codes sont composés de deux lettres majuscules. Le fichier d'exemple
+[data/countries.csv](data/countries.csv) peut être importé avec :
+
+```sh
+npx tsx src/back-end/backend-cli.ts add-countries ./data/countries.csv
+```
+
+Pour utiliser une autre base SQLite, indiquez `--path` avant la sous-commande :
+
+```sh
+npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite add-countries ./data/countries.csv
+```
+
+Pour supprimer les pays qui ne sont associés à aucun film :
+
+```sh
+npx tsx src/back-end/backend-cli.ts clean-countries
+```
+
+La commande conserve les pays associés à un film et affiche le nombre de pays
+importés ou supprimés ainsi que le chemin de la base utilisée.
+
 ## API locale
 
 | Méthode | Route                 | Description                                                       |

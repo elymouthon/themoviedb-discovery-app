@@ -11,6 +11,8 @@ const getDatabaseMock = vi.fn(() => ({
 }));
 const upsertGenresMock = vi.fn();
 const deleteUnusedGenresMock = vi.fn();
+const upsertCountriesMock = vi.fn();
+const deleteUnusedCountriesMock = vi.fn();
 
 vi.mock('./database/schema.ts', () => ({
   DEFAULT_DATABASE_PATH,
@@ -20,6 +22,11 @@ vi.mock('./database/schema.ts', () => ({
 vi.mock('./database/genre-repository.ts', () => ({
   deleteUnusedGenres: deleteUnusedGenresMock,
   upsertGenres: upsertGenresMock,
+}));
+
+vi.mock('./database/country-repository.ts', () => ({
+  deleteUnusedCountries: deleteUnusedCountriesMock,
+  upsertCountries: upsertCountriesMock,
 }));
 
 /**
@@ -131,6 +138,68 @@ describe('backend-cli.ts', () => {
       expect(closeMock).toHaveBeenCalledOnce();
       expect(logSpy).toHaveBeenCalledWith(
         `3 genre(s) supprimé(s) depuis ${resolve(databasePath)}`,
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('importe les pays après validation et ferme la base sélectionnée', async () => {
+    // Arrange
+    const directory = mkdtempSync(join(tmpdir(), 'countries-cli-'));
+    const csvPath = join(directory, 'countries.csv');
+    const databasePath = join(directory, 'movies.sqlite');
+    writeFileSync(csvPath, 'code,name\nFR,France\nUS,États-Unis\n');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Act
+    try {
+      await runCliWithArgs(['--path', databasePath, 'add-countries', csvPath]);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(databasePath);
+      expect(upsertCountriesMock).toHaveBeenCalledWith(expect.anything(), [
+        { code: 'FR', name: 'France' },
+        { code: 'US', name: 'États-Unis' },
+      ]);
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `2 pays importé(s) dans ${resolve(databasePath)}`,
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it('valide le CSV des pays avant d’ouvrir la base', async () => {
+    // Arrange
+    const directory = mkdtempSync(join(tmpdir(), 'countries-cli-'));
+    const csvPath = join(directory, 'countries.csv');
+    writeFileSync(csvPath, 'id,name\nFR,France\n');
+
+    // Act et assert
+    await expect(runCliWithArgs(['add-countries', csvPath])).rejects.toThrow(
+      'en-têtes',
+    );
+    expect(getDatabaseMock).not.toHaveBeenCalled();
+  });
+
+  it('supprime les pays inutilisés et affiche le nombre supprimé', async () => {
+    // Arrange
+    const databasePath = './data/custom-movies.sqlite';
+    deleteUnusedCountriesMock.mockReturnValueOnce(2);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Act
+    try {
+      await runCliWithArgs(['--path', databasePath, 'clean-countries']);
+
+      // Assert
+      expect(getDatabaseMock).toHaveBeenCalledWith(databasePath);
+      expect(deleteUnusedCountriesMock).toHaveBeenCalledWith(expect.anything());
+      expect(closeMock).toHaveBeenCalledOnce();
+      expect(logSpy).toHaveBeenCalledWith(
+        `2 pays supprimé(s) depuis ${resolve(databasePath)}`,
       );
     } finally {
       logSpy.mockRestore();
