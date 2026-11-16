@@ -78,6 +78,146 @@ describe('movies API', () => {
     vi.restoreAllMocks();
   });
 
+  describe('GET /api/discover/movies', () => {
+    it('passes the year to Discover and converts the returned movies', async () => {
+      // Arrange
+      const rawMovie = { id: 1 };
+      const rawData = {
+        page: 1,
+        results: [rawMovie],
+        total_pages: 2,
+        total_results: 1,
+      } as unknown as TmdbMoviesRawResponse;
+      const supportedMovie = { id: 1, title: 'Movie' };
+      const fetchMock = vi.fn().mockResolvedValueOnce(tmdbResponse(rawData));
+      vi.stubGlobal('fetch', fetchMock);
+      toSupportedMovieMock.mockReturnValue(supportedMovie);
+      const response = createResponse();
+
+      // Act
+      await getHandler('/api/discover/movies')(
+        { query: { year: '2020' } } as Request,
+        response,
+        vi.fn(),
+      );
+
+      // Assert
+      expect(fetchMock).toHaveBeenCalledWith(
+        `https://api.themoviedb.org/3/discover/movie?primary_release_year=2020&language=${DEFAULT_LANGUAGE}&page=${DEFAULT_PAGE}&region=${DEFAULT_REGION}`,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: `Bearer ${tmdbAccessToken}`,
+          }),
+        }),
+      );
+      expect(toSupportedMovieMock).toHaveBeenCalledWith(rawMovie, 0, [
+        rawMovie,
+      ]);
+      expect(response.json).toHaveBeenCalledWith({
+        page: 1,
+        results: [supportedMovie],
+        total_pages: 2,
+        total_results: 1,
+      });
+    });
+
+    it('passes custom options and returns an empty result page', async () => {
+      // Arrange
+      const rawData = {
+        page: 2,
+        results: [],
+        total_pages: 2,
+        total_results: 0,
+      } as unknown as TmdbMoviesRawResponse;
+      const fetchMock = vi.fn().mockResolvedValueOnce(tmdbResponse(rawData));
+      vi.stubGlobal('fetch', fetchMock);
+      const response = createResponse();
+
+      // Act
+      await getHandler('/api/discover/movies')(
+        {
+          query: {
+            year: '2015',
+            language: 'en-US',
+            page: '2',
+            region: 'US',
+          },
+        } as Request,
+        response,
+        vi.fn(),
+      );
+
+      // Assert
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.themoviedb.org/3/discover/movie?primary_release_year=2015&language=en-US&page=2&region=US',
+        expect.anything(),
+      );
+      expect(response.json).toHaveBeenCalledWith({
+        page: 2,
+        results: [],
+        total_pages: 2,
+        total_results: 0,
+      });
+    });
+
+    it('rejects invalid years without calling TMDB', async () => {
+      // Arrange
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+      const invalidQueries = [
+        {},
+        { year: '20' },
+        { year: '10000' },
+        { year: ['2020'] },
+      ];
+
+      // Act and assert
+      for (const query of invalidQueries) {
+        const response = createResponse();
+        await getHandler('/api/discover/movies')(
+          { query } as unknown as Request,
+          response,
+          vi.fn(),
+        );
+        expect(response.status).toHaveBeenCalledWith(400);
+        expect(response.json).toHaveBeenCalledWith({
+          error: 'Year must be a four-digit string between 1000 and 9999.',
+        });
+      }
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('returns HTTP 500 and logs HTTP, network and JSON errors', async () => {
+      // Arrange
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(tmdbResponse({}, false, 503))
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: vi.fn().mockRejectedValueOnce(new Error('Invalid JSON')),
+        });
+      vi.stubGlobal('fetch', fetchMock);
+      const errorSpy = vi.spyOn(console, 'error');
+
+      // Act and assert
+      for (let index = 0; index < 3; index += 1) {
+        const response = createResponse();
+        await getHandler('/api/discover/movies')(
+          { query: { year: '2020' } } as Request,
+          response,
+          vi.fn(),
+        );
+        expect(response.status).toHaveBeenCalledWith(500);
+        expect(response.json).toHaveBeenCalledWith({
+          error: 'Failed to discover movies',
+        });
+      }
+      expect(errorSpy).toHaveBeenCalledTimes(3);
+    });
+  });
+
   describe('GET /api/movies/popular', () => {
     it('returns popular movies', async () => {
       // Arrange

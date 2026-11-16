@@ -64,6 +64,10 @@ describe('back-end server routes', () => {
   });
 
   describe('route registration', () => {
+    it('registers the /api/discover/movies route', () => {
+      expect(routeHandlers.has('/api/discover/movies')).toBe(true);
+    });
+
     it('registers the /api/movies/popular route', () => {
       expect(routeHandlers.has('/api/movies/popular')).toBe(true);
     });
