@@ -11,6 +11,8 @@ import {
   deleteUnusedGenres,
   upsertGenres,
 } from './database/genre-repository.ts';
+import { parseMoviesCsv } from './database/movie-csv-importer.ts';
+import { upsertMovies } from './database/movie-repository.ts';
 import { parseCountriesCsv } from './utils/countries-csv.ts';
 import { parseGenresCsv } from './utils/genres-csv.ts';
 
@@ -107,6 +109,25 @@ program
 
     console.log(
       `${deletedCount} pays supprimé(s) depuis ${resolve(databasePath)}`,
+    );
+  });
+
+program
+  .command('add-movies <csv-file>')
+  .description('Importe ou actualise les films depuis un fichier CSV')
+  .action((csvFile: string) => {
+    const movies = parseMoviesCsv(readFileSync(resolve(csvFile), 'utf8'));
+    const databasePath = getDatabasePath();
+    const database = getDatabase(databasePath);
+
+    try {
+      upsertMovies(database, movies);
+    } finally {
+      database.close();
+    }
+
+    console.log(
+      `${movies.length} film(s) importé(s) dans ${resolve(databasePath)}`,
     );
   });
 

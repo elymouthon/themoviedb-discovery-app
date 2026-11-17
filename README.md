@@ -60,6 +60,41 @@ npx tsx src/back-end/backend-cli.ts create-database --path ./data/ma-base.sqlite
 
 La commande initialise le schéma sans supprimer les données d'une base existante.
 
+## Import des films depuis un CSV
+
+Le fichier CSV des films doit contenir exactement les colonnes suivantes, dans
+n'importe quel ordre et sans distinction de casse :
+
+```text
+id,title,original_title,original_language,overview,release_date,popularity,vote_average,vote_count,poster_path,backdrop_path,runtime_minutes,budget,revenue,collected_at
+```
+
+Le fichier d'exemple [data/movies.csv](data/movies.csv) peut être importé avec :
+
+```sh
+npx tsx src/back-end/backend-cli.ts add-movies ./data/movies.csv
+```
+
+Pour utiliser une autre base SQLite, indiquez `--path` avant la sous-commande :
+
+```sh
+npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite add-movies ./data/movies.csv
+```
+
+Règles de validation :
+
+- `id` est un entier strictement positif ; un film déjà présent est actualisé
+  sans créer de doublon.
+- `title`, `original_title`, `original_language`, `overview` et `collected_at`
+  sont obligatoires.
+- `popularity` et `vote_average` sont numériques, `vote_count` est entier.
+- `runtime_minutes`, `budget` et `revenue` sont des entiers strictement positifs.
+- Les champs optionnels vides sont enregistrés comme `NULL`, jamais comme zéro.
+
+Le CSV est validé avant l'ouverture de la base et l'import est transactionnel :
+en cas d'erreur, aucune donnée n'est modifiée. La commande ferme la connexion et
+affiche le nombre de films importés ainsi que le chemin de la base utilisée.
+
 ## Import et nettoyage des genres
 
 Le fichier CSV des genres doit contenir exactement les colonnes `id` et `name`.
