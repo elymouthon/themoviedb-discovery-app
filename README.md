@@ -95,6 +95,57 @@ Le CSV est validé avant l'ouverture de la base et l'import est transactionnel :
 en cas d'erreur, aucune donnée n'est modifiée. La commande ferme la connexion et
 affiche le nombre de films importés ainsi que le chemin de la base utilisée.
 
+## Synchronisation des films depuis TMDB
+
+La commande `sync-movies` met à jour la base à partir des API TMDB. Elle utilise
+le jeton `TMDB_ACCESS_TOKEN` du fichier `.env` ; les autres commandes du CLI
+n'en ont pas besoin.
+
+```sh
+# Films sortis en 2020, première page Discover (20 films)
+npx tsx src/back-end/backend-cli.ts sync-movies --from 2020
+
+# Films sortis de 2015 à 2024, 3 pages Discover par année
+npx tsx src/back-end/backend-cli.ts sync-movies --from 2015 --to 2024 --pages 3
+
+# Autre base SQLite et libellés en anglais
+npx tsx src/back-end/backend-cli.ts --path ./data/custom-movies.sqlite sync-movies --from 2020 --language en-US
+```
+
+| Option                  | Description                                   | Défaut   |
+| ----------------------- | --------------------------------------------- | -------- |
+| `--from <year>`         | Année de sortie de début (obligatoire).       | -        |
+| `--to <year>`           | Année de sortie de fin.                       | `--from` |
+| `--pages <count>`       | Nombre de pages Discover par année (1 à 500). | `1`      |
+| `--language <language>` | Langue des libellés des genres et des pays.   | `fr-FR`  |
+
+Déroulement :
+
+1. Les catalogues des genres (`GET /genre/movie/list`) et des pays
+   (`GET /configuration/countries`) sont importés ou actualisés.
+2. Pour chaque année, les pages de `GET /discover/movie` sont parcourues avec le
+   filtre `primary_release_year`, jusqu'au nombre de pages demandé ou à la
+   dernière page disponible.
+3. Le détail de chaque film (`GET /movie/{movie_id}`) apporte la durée, le
+   budget, les recettes, les genres et les pays de production.
+4. Chaque page est enregistrée dans une transaction : le film est inséré ou
+   actualisé avec la date d'observation, et ses genres et pays remplacent les
+   associations précédentes.
+
+Règles appliquées :
+
+- Un film déjà présent est actualisé sans doublon ; les films des autres années
+  sont conservés.
+- Les durées, budgets et recettes absents ou égaux à zéro sont enregistrés comme
+  `NULL` ; popularité, note et nombre de votes absents restent `NULL`.
+- Un pays présent dans le détail d'un film mais absent du catalogue est créé ;
+  un pays existant conserve le nom traduit du catalogue.
+- Les options sont validées avant l'ouverture de la base. En cas d'erreur TMDB,
+  les pages déjà enregistrées sont conservées et l'erreur est affichée.
+
+La commande affiche l'avancement par page, puis le nombre de films, de genres et
+de pays synchronisés ainsi que le chemin de la base utilisée.
+
 ## Import et nettoyage des genres
 
 Le fichier CSV des genres doit contenir exactement les colonnes `id` et `name`.

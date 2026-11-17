@@ -79,6 +79,33 @@ export type MovieRecord = {
 
 export type MovieRecordInput = Omit<MovieRecord, 'release_year'>;
 
+// TypeScript type for the TMDB movie details used to synchronize the database.
+export type TmdbMovieSyncDetails = {
+  id: number;
+  title: string;
+  original_title: string;
+  original_language: string;
+  overview: string | null;
+  release_date: string | null;
+  popularity: number | null;
+  vote_average: number | null;
+  vote_count: number | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  runtime: number | null;
+  budget: number | null;
+  revenue: number | null;
+  genres: Genre[];
+  production_countries: Array<{ iso_3166_1: string; name: string }>;
+};
+
+// TypeScript type for a country returned by the TMDB countries catalog.
+export type TmdbCountry = {
+  iso_3166_1: string;
+  english_name: string;
+  native_name?: string;
+};
+
 // TypeScript type for the API response when fetching movies, containing an array of supported Movie objects.
 export type MoviesApiResponse = {
   page: number;

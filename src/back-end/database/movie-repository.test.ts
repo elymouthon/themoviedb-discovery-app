@@ -2,7 +2,16 @@
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { initializeSchema } from './schema';
-import { getMovieById, getMovies, upsertMovies } from './movie-repository';
+import {
+  getMovieById,
+  getMovieCountryCodes,
+  getMovieGenreIds,
+  getMovies,
+  saveMoviesWithRelations,
+  upsertMovies,
+} from './movie-repository';
+import { getGenres } from './genre-repository';
+import { getCountries, upsertCountries } from './country-repository';
 import type { MovieRecordInput } from '../types/MoviesTypes';
 
 describe('movie-repository.ts', () => {
@@ -132,5 +141,134 @@ describe('movie-repository.ts', () => {
       ]),
     ).toThrow(/CHECK constraint failed/);
     expect(getMovies(database)).toEqual([]);
+  });
+
+  describe('saveMoviesWithRelations', () => {
+    it('enregistre un film avec ses genres et ses pays de production', () => {
+      // Arrange
+      const database = createDatabase();
+
+      // Act
+      saveMoviesWithRelations(database, [
+        {
+          movie: createMovie({ id: 550 }),
+          genres: [
+            { id: 18, name: 'Drame' },
+            { id: 53, name: 'Thriller' },
+          ],
+          countries: [
+            { code: 'US', name: 'États-Unis' },
+            { code: 'DE', name: 'Allemagne' },
+          ],
+        },
+      ]);
+
+      // Assert : le film, les catalogues et les associations sont créés.
+      expect(getMovieById(database, 550)?.title).toBe('Film');
+      expect(getMovieGenreIds(database, 550)).toEqual([18, 53]);
+      expect(getMovieCountryCodes(database, 550)).toEqual(['DE', 'US']);
+      expect(getGenres(database)).toHaveLength(2);
+      expect(getCountries(database)).toHaveLength(2);
+    });
+
+    it('actualise un film et remplace ses associations sans toucher aux autres films', () => {
+      // Arrange : deux films déjà enregistrés.
+      const database = createDatabase();
+      saveMoviesWithRelations(database, [
+        {
+          movie: createMovie({ id: 1, title: 'Ancien titre' }),
+          genres: [{ id: 18, name: 'Drama' }],
+          countries: [{ code: 'FR', name: 'France' }],
+        },
+        {
+          movie: createMovie({ id: 2, release_date: '2015-01-01' }),
+          genres: [{ id: 18, name: 'Drama' }],
+          countries: [{ code: 'FR', name: 'France' }],
+        },
+      ]);
+
+      // Act : le premier film est actualisé avec de nouveaux genres et pays.
+      saveMoviesWithRelations(
+        database,
+        new Set([
+          {
+            movie: createMovie({ id: 1, title: 'Nouveau titre' }),
+            genres: [
+              { id: 18, name: 'Drame' },
+              { id: 35, name: 'Comédie' },
+              { id: 35, name: 'Comédie' },
+            ],
+            countries: [{ code: 'BE', name: 'Belgique' }],
+          },
+        ]),
+      );
+
+      // Assert
+      expect(getMovies(database)).toHaveLength(2);
+      expect(getMovieById(database, 1)?.title).toBe('Nouveau titre');
+      expect(getMovieGenreIds(database, 1)).toEqual([18, 35]);
+      expect(getMovieCountryCodes(database, 1)).toEqual(['BE']);
+      expect(getMovieGenreIds(database, 2)).toEqual([18]);
+      expect(getMovieCountryCodes(database, 2)).toEqual(['FR']);
+      expect(getGenres(database)).toContainEqual({ id: 18, name: 'Drame' });
+    });
+
+    it('conserve le nom traduit d’un pays déjà présent dans le catalogue', () => {
+      // Arrange : le catalogue contient le nom traduit du pays.
+      const database = createDatabase();
+      upsertCountries(database, [{ code: 'US', name: 'États-Unis' }]);
+
+      // Act : le détail TMDB fournit le nom anglais.
+      saveMoviesWithRelations(database, [
+        {
+          movie: createMovie({ id: 1 }),
+          genres: [],
+          countries: [{ code: 'US', name: 'United States of America' }],
+        },
+      ]);
+
+      // Assert
+      expect(getCountries(database)).toEqual([
+        { code: 'US', name: 'États-Unis' },
+      ]);
+      expect(getMovieCountryCodes(database, 1)).toEqual(['US']);
+    });
+
+    it('ne modifie rien pour une entrée vide', () => {
+      // Arrange
+      const database = createDatabase();
+
+      // Act
+      saveMoviesWithRelations(database, []);
+
+      // Assert
+      expect(getMovies(database)).toEqual([]);
+      expect(getGenres(database)).toEqual([]);
+    });
+
+    it('annule toutes les modifications quand un film est invalide', () => {
+      // Arrange : le second film viole la contrainte de durée positive.
+      const database = createDatabase();
+
+      // Act et assert
+      expect(() =>
+        saveMoviesWithRelations(database, [
+          {
+            movie: createMovie({ id: 1 }),
+            genres: [{ id: 18, name: 'Drame' }],
+            countries: [{ code: 'FR', name: 'France' }],
+          },
+          {
+            movie: createMovie({ id: 2, runtime_minutes: 0 }),
+            genres: [],
+            countries: [],
+          },
+        ]),
+      ).toThrow();
+      expect(getMovies(database)).toEqual([]);
+      expect(getGenres(database)).toEqual([]);
+      expect(getCountries(database)).toEqual([]);
+      expect(getMovieGenreIds(database, 1)).toEqual([]);
+    });
   });
 });

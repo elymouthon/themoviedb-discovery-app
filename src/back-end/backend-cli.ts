@@ -13,6 +13,13 @@ import {
 } from './database/genre-repository.ts';
 import { parseMoviesCsv } from './database/movie-csv-importer.ts';
 import { upsertMovies } from './database/movie-repository.ts';
+import {
+  parseMovieSyncOptions,
+  syncMovies,
+  type MovieSyncSummary,
+} from './services/movie-sync-service.ts';
+import { createTmdbClient } from './services/tmdb-client.ts';
+import { DEFAULT_LANGUAGE } from './utils/constants.ts';
 import { parseCountriesCsv } from './utils/countries-csv.ts';
 import { parseGenresCsv } from './utils/genres-csv.ts';
 
@@ -131,4 +138,43 @@ program
     );
   });
 
-program.parse();
+program
+  .command('sync-movies')
+  .description(
+    'Met à jour les genres, les pays et les films des années choisies depuis TMDB',
+  )
+  .requiredOption('--from <year>', 'année de sortie de début')
+  .option('--to <year>', 'année de sortie de fin (par défaut --from)')
+  .option('--pages <count>', 'nombre de pages Discover par année', '1')
+  .option('--language <language>', 'langue des libellés', DEFAULT_LANGUAGE)
+  .action(
+    async (rawOptions: {
+      from: string;
+      to?: string;
+      pages: string;
+      language: string;
+    }) => {
+      const options = parseMovieSyncOptions(rawOptions);
+      // The TMDB token is only required by this command.
+      const { tmdbAccessToken } = await import('./utils/config.ts');
+      const client = createTmdbClient({
+        accessToken: tmdbAccessToken as string,
+        language: rawOptions.language,
+      });
+      const databasePath = getDatabasePath();
+      const database = getDatabase(databasePath);
+      let summary: MovieSyncSummary;
+
+      try {
+        summary = await syncMovies(database, client, options, console.log);
+      } finally {
+        database.close();
+      }
+
+      console.log(
+        `${summary.movies} film(s), ${summary.genres} genre(s) et ${summary.countries} pays synchronisés dans ${resolve(databasePath)}`,
+      );
+    },
+  );
+
+await program.parseAsync();

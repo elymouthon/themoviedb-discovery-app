@@ -14,6 +14,9 @@ const deleteUnusedGenresMock = vi.fn();
 const upsertCountriesMock = vi.fn();
 const deleteUnusedCountriesMock = vi.fn();
 const upsertMoviesMock = vi.fn();
+const tmdbClient = { name: 'tmdb-client' };
+const createTmdbClientMock = vi.fn(() => tmdbClient);
+const syncMoviesMock = vi.fn();
 
 vi.mock('./database/schema.ts', () => ({
   DEFAULT_DATABASE_PATH,
@@ -32,6 +35,21 @@ vi.mock('./database/country-repository.ts', () => ({
 
 vi.mock('./database/movie-repository.ts', () => ({
   upsertMovies: upsertMoviesMock,
+}));
+
+vi.mock('./utils/config.ts', () => ({
+  tmdbAccessToken: 'test-token',
+}));
+
+vi.mock('./services/tmdb-client.ts', () => ({
+  createTmdbClient: createTmdbClientMock,
+}));
+
+vi.mock('./services/movie-sync-service.ts', async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import('./services/movie-sync-service.ts')
+  >()),
+  syncMovies: syncMoviesMock,
 }));
 
 const MOVIES_CSV_HEADERS =
@@ -288,6 +306,105 @@ describe('backend-cli.ts', () => {
         'échec SQLite',
       );
       expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+      expect(closeMock).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('sync-movies', () => {
+    it('synchronise les années demandées et ferme la base sélectionnée', async () => {
+      // Arrange
+      const databasePath = './data/custom-movies.sqlite';
+      syncMoviesMock.mockResolvedValueOnce({
+        genres: 19,
+        countries: 250,
+        movies: 40,
+      });
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      // Act
+      try {
+        await runCliWithArgs([
+          '--path',
+          databasePath,
+          'sync-movies',
+          '--from',
+          '2015',
+          '--to',
+          '2016',
+          '--pages',
+          '2',
+          '--language',
+          'en-US',
+        ]);
+
+        // Assert : le client utilise le jeton serveur et les options validées.
+        expect(createTmdbClientMock).toHaveBeenCalledWith({
+          accessToken: 'test-token',
+          language: 'en-US',
+        });
+        expect(getDatabaseMock).toHaveBeenCalledWith(databasePath);
+        expect(syncMoviesMock).toHaveBeenCalledWith(
+          expect.anything(),
+          tmdbClient,
+          { fromYear: 2015, toYear: 2016, pagesPerYear: 2 },
+          console.log,
+        );
+        expect(closeMock).toHaveBeenCalledOnce();
+        expect(logSpy).toHaveBeenCalledWith(
+          `40 film(s), 19 genre(s) et 250 pays synchronisés dans ${resolve(databasePath)}`,
+        );
+      } finally {
+        logSpy.mockRestore();
+      }
+    });
+
+    it('utilise une seule page et la langue par défaut', async () => {
+      // Arrange
+      syncMoviesMock.mockResolvedValueOnce({
+        genres: 0,
+        countries: 0,
+        movies: 0,
+      });
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      // Act
+      try {
+        await runCliWithArgs(['sync-movies', '--from', '2020']);
+
+        // Assert
+        expect(createTmdbClientMock).toHaveBeenCalledWith({
+          accessToken: 'test-token',
+          language: 'fr-FR',
+        });
+        expect(getDatabaseMock).toHaveBeenCalledWith(DEFAULT_DATABASE_PATH);
+        expect(syncMoviesMock).toHaveBeenCalledWith(
+          expect.anything(),
+          tmdbClient,
+          { fromYear: 2020, toYear: 2020, pagesPerYear: 1 },
+          console.log,
+        );
+      } finally {
+        logSpy.mockRestore();
+      }
+    });
+
+    it('valide les options avant d’ouvrir la base', async () => {
+      // Act et assert
+      await expect(
+        runCliWithArgs(['sync-movies', '--from', '2024', '--to', '2015']),
+      ).rejects.toThrow('précéder');
+      expect(getDatabaseMock).not.toHaveBeenCalled();
+      expect(syncMoviesMock).not.toHaveBeenCalled();
+    });
+
+    it('propage l’erreur de synchronisation et ferme quand même la base', async () => {
+      // Arrange
+      syncMoviesMock.mockRejectedValueOnce(new Error('TMDB indisponible'));
+
+      // Act et assert
+      await expect(
+        runCliWithArgs(['sync-movies', '--from', '2020']),
+      ).rejects.toThrow('TMDB indisponible');
       expect(closeMock).toHaveBeenCalledOnce();
     });
   });
