@@ -8,7 +8,7 @@ Application web de découverte de films qui s'appuie sur l'API de [The Movie Dat
 - Fiche détaillée pour chaque film.
 - Page « Tableau de bord » des films (`/dashboard`), accessible depuis la barre
   de navigation ; elle affiche un état vide en attendant les widgets.
-- Widgets « Films en base », « Durée moyenne » et « Note moyenne » pour le tableau de bord, visibles dans Storybook.
+- Widgets « Films en base », « Durée moyenne », « Note moyenne » et « Pays le plus représenté » pour le tableau de bord, visibles dans Storybook.
 - Pages « À propos » et « Page introuvable ».
 - Storybook pour visualiser les composants et leurs différents états.
 - Thème clair ou sombre, conservé dans le navigateur.
@@ -249,15 +249,16 @@ La barre d'outils propose un sélecteur **Thème** pour afficher les composants 
 
 ### Stories disponibles
 
-| Story                          | États                                                              |
-| ------------------------------ | ------------------------------------------------------------------ |
-| `Pages/DashboardPage`          | Sans widgets                                                       |
-| `Components/MovieItem`         | Avec affiche, sans affiche                                         |
-| `Components/MovieDetailCard`   | Complet, minimal                                                   |
-| `Components/ThemeToggle`       | Thème clair, thème sombre                                          |
-| `Widgets/MoviesCountWidget`    | Avec données, un seul film, sans période, vide, chargement, erreur |
-| `Widgets/AverageRuntimeWidget` | Nominal (107 min), mobile, sans données, chargement, erreur        |
-| `Widgets/AverageRatingWidget`  | Nominal (6,78 / 10), note zéro, sans notes, chargement, erreur     |
+| Story                          | États                                                                                   |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `Pages/DashboardPage`          | Sans widgets                                                                            |
+| `Components/MovieItem`         | Avec affiche, sans affiche                                                              |
+| `Components/MovieDetailCard`   | Complet, minimal                                                                        |
+| `Components/ThemeToggle`       | Thème clair, thème sombre                                                               |
+| `Widgets/MoviesCountWidget`    | Avec données, un seul film, sans période, vide, chargement, erreur                      |
+| `Widgets/AverageRuntimeWidget` | Nominal (107 min), mobile, sans données, chargement, erreur                             |
+| `Widgets/AverageRatingWidget`  | Nominal (6,78 / 10), note zéro, sans notes, chargement, erreur                          |
+| `Widgets/TopCountryWidget`     | Nominal (United States of America, 725 films), nom long, aucun pays, chargement, erreur |
 
 ### Widgets du tableau de bord
 
@@ -270,7 +271,7 @@ Les widgets s'appuient sur le composant commun `DashboardWidget` (`src/front-end
 | `empty`   | Message d'absence de données (`emptyMessage`).              |
 | `success` | Contenu propre au widget.                                   |
 
-Pour afficher leur contenu, les widgets utilisent les classes communes `dashboard-widget-value` (valeur principale), `dashboard-widget-unit` (unité) et `dashboard-widget-caption` (précision sous la valeur), définies dans `DashboardWidget.css`.
+Pour afficher leur contenu, les widgets utilisent les classes communes `dashboard-widget-value` (valeur principale), `dashboard-widget-label` (texte principal, comme un nom de pays, qui passe à la ligne s'il est long), `dashboard-widget-unit` (unité) et `dashboard-widget-caption` (précision sous la valeur), définies dans `DashboardWidget.css`.
 
 Widgets disponibles :
 
@@ -293,6 +294,16 @@ Widgets disponibles :
   | `ratedMoviesCount` | `number`, facultative           | Nombre de films notés pris en compte, affiché sous la note.                                                                                                                                                                              |
 
   Une note de zéro est affichée comme une note (« 0,00 / 10 »). Une note absente, hors de l'échelle 0 à 10 ou invalide affiche l'état vide. La mention « Moyenne simple » distingue cette note de la note pondérée.
+
+- **Pays le plus représenté** (`TopCountryWidget`) : pays de production associé au plus grand nombre de films, avec son nombre de films.
+
+  | Propriété     | Type                            | Description                                                                                                                                                                                                                        |
+  | ------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `status`      | `WidgetStatus`                  | État d'affichage du widget.                                                                                                                                                                                                        |
+  | `countryName` | `string` ou `null`, facultative | Nom du pays le plus représenté, affiché en entier : un nom long passe à la ligne.                                                                                                                                                  |
+  | `movieCount`  | `number` ou `null`, facultative | Nombre de films associés au pays, affiché tel qu'il est fourni avec l'unité « films ». Un film coproduit par plusieurs pays est compté pour chacun d'eux par la source de données ; le composant ne recompte pas ces associations. |
+
+  Sans nom de pays, ou avec un nombre de films absent, nul ou invalide, le widget affiche l'état vide.
 
 ### Tester les stories
 

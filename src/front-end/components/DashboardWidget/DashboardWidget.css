@@ -56,6 +56,18 @@
   text-decoration: none;
 }
 
+/* Main text displayed by a widget (country, genre or movie title). Long
+   names wrap instead of overflowing the card. */
+.dashboard-widget-label {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
 .dashboard-widget-caption {
   margin: 0;
   color: var(--text-muted);
@@ -75,5 +87,9 @@
 
   .dashboard-widget-value {
     font-size: 2rem;
+  }
+
+  .dashboard-widget-label {
+    font-size: 1.35rem;
   }
 }
