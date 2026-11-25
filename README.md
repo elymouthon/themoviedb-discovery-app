@@ -9,6 +9,7 @@ Application web de découverte de films qui s'appuie sur l'API de [The Movie Dat
 - Page « Tableau de bord » des films (`/dashboard`), accessible depuis la barre
   de navigation ; elle affiche un état vide en attendant les widgets.
 - Pages « À propos » et « Page introuvable ».
+- Storybook pour visualiser les composants et leurs différents états.
 - Thème clair ou sombre, conservé dans le navigateur.
 - API Express intermédiaire pour appeler TMDB sans exposer le jeton dans le navigateur.
 
@@ -223,6 +224,57 @@ et les paramètres `language`, `page` et `region` sont facultatifs :
 La route consulte une seule page de résultats et ne stocke pas les films dans
 SQLite. L'année doit être une chaîne de quatre chiffres comprise entre `1000` et
 `9999`.
+
+## Storybook
+
+[Storybook](https://storybook.js.org/) permet de visualiser les composants React de l'interface de façon isolée, dans leurs différents états, sans lancer le serveur Express ni appeler TMDB. Il servira notamment à développer et valider les widgets du tableau de bord.
+
+### Lancer Storybook
+
+```sh
+npm run storybook        # Lance Storybook sur http://localhost:6006
+npm run build-storybook  # Génère la version statique dans storybook-static/
+```
+
+La barre d'outils propose un sélecteur **Thème** pour afficher les composants en mode clair ou sombre.
+
+### Organisation
+
+- La configuration se trouve dans le dossier `.storybook/` :
+  - `main.ts` déclare l'emplacement des stories et le framework `@storybook/react-vite`, qui réutilise la configuration Vite du projet.
+  - `preview.tsx` charge les styles globaux, applique le thème choisi et fournit un `MemoryRouter` aux composants qui utilisent des liens.
+- Les stories sont colocalisées avec leur composant, dans un fichier `NomDuComposant.stories.tsx`.
+- Les stories sont exclues de la couverture des tests.
+
+### Stories disponibles
+
+| Story                        | États                      |
+| ---------------------------- | -------------------------- |
+| `Pages/DashboardPage`        | Sans widgets               |
+| `Components/MovieItem`       | Avec affiche, sans affiche |
+| `Components/MovieDetailCard` | Complet, minimal           |
+| `Components/ThemeToggle`     | Thème clair, thème sombre  |
+
+### Ajouter une story
+
+Créer un fichier `NomDuComposant.stories.tsx` à côté du composant, puis déclarer une story par état à visualiser :
+
+```tsx
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import MonWidget from './MonWidget';
+
+const meta = {
+  title: 'Widgets/MonWidget',
+  component: MonWidget,
+} satisfies Meta<typeof MonWidget>;
+
+export default meta;
+
+type Story = StoryObj<typeof meta>;
+
+export const Chargement: Story = { args: { loading: true } };
+export const AvecDonnees: Story = { args: { value: 42 } };
+```
 
 ## Vérifications
 
