@@ -1,7 +1,6 @@
 import DashboardWidget, {
   type WidgetStatus,
 } from '../DashboardWidget/DashboardWidget';
-import './MoviesCountWidget.css';
 
 type MoviesCountWidgetProps = {
   /** Current display state of the widget. */
@@ -52,13 +51,13 @@ export default function MoviesCountWidget({
       emptyMessage="Aucun film en base pour le moment."
       errorMessage="Impossible de charger le nombre de films."
     >
-      <p className="movies-count-value">
+      <p className="dashboard-widget-value">
         {numberFormat.format(count)}
-        <span className="movies-count-unit">
+        <span className="dashboard-widget-unit">
           {count > 1 ? ' films' : ' film'}
         </span>
       </p>
-      {period && <p className="movies-count-period">{period}</p>}
+      {period && <p className="dashboard-widget-caption">{period}</p>}
     </DashboardWidget>
   );
 }

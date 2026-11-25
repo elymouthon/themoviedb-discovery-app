@@ -8,7 +8,7 @@ Application web de découverte de films qui s'appuie sur l'API de [The Movie Dat
 - Fiche détaillée pour chaque film.
 - Page « Tableau de bord » des films (`/dashboard`), accessible depuis la barre
   de navigation ; elle affiche un état vide en attendant les widgets.
-- Widgets « Films en base » et « Durée moyenne » pour le tableau de bord, visibles dans Storybook.
+- Widgets « Films en base », « Durée moyenne » et « Note moyenne » pour le tableau de bord, visibles dans Storybook.
 - Pages « À propos » et « Page introuvable ».
 - Storybook pour visualiser les composants et leurs différents états.
 - Thème clair ou sombre, conservé dans le navigateur.
@@ -257,6 +257,7 @@ La barre d'outils propose un sélecteur **Thème** pour afficher les composants 
 | `Components/ThemeToggle`       | Thème clair, thème sombre                                          |
 | `Widgets/MoviesCountWidget`    | Avec données, un seul film, sans période, vide, chargement, erreur |
 | `Widgets/AverageRuntimeWidget` | Nominal (107 min), mobile, sans données, chargement, erreur        |
+| `Widgets/AverageRatingWidget`  | Nominal (6,78 / 10), note zéro, sans notes, chargement, erreur     |
 
 ### Widgets du tableau de bord
 
@@ -269,6 +270,8 @@ Les widgets s'appuient sur le composant commun `DashboardWidget` (`src/front-end
 | `empty`   | Message d'absence de données (`emptyMessage`).              |
 | `success` | Contenu propre au widget.                                   |
 
+Pour afficher leur contenu, les widgets utilisent les classes communes `dashboard-widget-value` (valeur principale), `dashboard-widget-unit` (unité) et `dashboard-widget-caption` (précision sous la valeur), définies dans `DashboardWidget.css`.
+
 Widgets disponibles :
 
 - **Films en base** (`MoviesCountWidget`) : nombre de films enregistrés et période de sortie couverte (`count`, `firstYear`, `lastYear`). Un chargement réussi sans aucun film affiche l'état vide.
@@ -280,6 +283,16 @@ Widgets disponibles :
   | `averageRuntime` | `number` ou `null`, facultative | Durée moyenne en minutes, calculée sur les durées valides uniquement et arrondie à la minute près. |
 
   Une durée absente, nulle, négative ou invalide n'est jamais affichée comme zéro : le widget affiche son état vide.
+
+- **Note moyenne** (`AverageRatingWidget`) : moyenne simple des notes TMDB des films, sur une échelle de 0 à 10.
+
+  | Propriété          | Type                            | Description                                                                                                                                                                                                                              |
+  | ------------------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `status`           | `WidgetStatus`                  | État d'affichage du widget.                                                                                                                                                                                                              |
+  | `averageRating`    | `number` ou `null`, facultative | Moyenne simple (non pondérée) des notes, calculée sur l'ensemble des films notés du catalogue et non par le composant. Elle est affichée au format français avec deux décimales, suivie de l'échelle `/ 10` (par exemple « 6,78 / 10 »). |
+  | `ratedMoviesCount` | `number`, facultative           | Nombre de films notés pris en compte, affiché sous la note.                                                                                                                                                                              |
+
+  Une note de zéro est affichée comme une note (« 0,00 / 10 »). Une note absente, hors de l'échelle 0 à 10 ou invalide affiche l'état vide. La mention « Moyenne simple » distingue cette note de la note pondérée.
 
 ### Tester les stories
 

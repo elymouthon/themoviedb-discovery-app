@@ -1,7 +1,6 @@
 import DashboardWidget, {
   type WidgetStatus,
 } from '../DashboardWidget/DashboardWidget';
-import './AverageRuntimeWidget.css';
 
 type AverageRuntimeWidgetProps = {
   /** Current display state of the widget. */
@@ -49,9 +48,9 @@ export default function AverageRuntimeWidget({
       errorMessage="Impossible de charger la durée moyenne."
     >
       {hasRuntime && (
-        <p className="average-runtime-value">
+        <p className="dashboard-widget-value">
           {minutesFormat.format(averageRuntime)}{' '}
-          <abbr className="average-runtime-unit" title="minutes">
+          <abbr className="dashboard-widget-unit" title="minutes">
             min
           </abbr>
         </p>

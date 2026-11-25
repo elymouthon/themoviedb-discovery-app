@@ -40,6 +40,27 @@
   gap: 6px;
 }
 
+/* Main value displayed by a widget, with its unit and an optional caption. */
+.dashboard-widget-value {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.dashboard-widget-unit {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dashboard-widget-caption {
+  margin: 0;
+  color: var(--text-muted);
+}
+
 /* Keep the widget labels readable on small screens. */
 @media (max-width: 600px) {
   .dashboard-widget {
@@ -50,5 +71,9 @@
   .dashboard-widget-title {
     font-size: 0.85rem;
     letter-spacing: 0.06em;
+  }
+
+  .dashboard-widget-value {
+    font-size: 2rem;
   }
 }
