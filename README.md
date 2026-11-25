@@ -8,7 +8,7 @@ Application web de découverte de films qui s'appuie sur l'API de [The Movie Dat
 - Fiche détaillée pour chaque film.
 - Page « Tableau de bord » des films (`/dashboard`), accessible depuis la barre
   de navigation ; elle affiche un état vide en attendant les widgets.
-- Widget « Films en base » pour le tableau de bord, visible dans Storybook.
+- Widgets « Films en base » et « Durée moyenne » pour le tableau de bord, visibles dans Storybook.
 - Pages « À propos » et « Page introuvable ».
 - Storybook pour visualiser les composants et leurs différents états.
 - Thème clair ou sombre, conservé dans le navigateur.
@@ -249,13 +249,14 @@ La barre d'outils propose un sélecteur **Thème** pour afficher les composants 
 
 ### Stories disponibles
 
-| Story                        | États                                                              |
-| ---------------------------- | ------------------------------------------------------------------ |
-| `Pages/DashboardPage`        | Sans widgets                                                       |
-| `Components/MovieItem`       | Avec affiche, sans affiche                                         |
-| `Components/MovieDetailCard` | Complet, minimal                                                   |
-| `Components/ThemeToggle`     | Thème clair, thème sombre                                          |
-| `Widgets/MoviesCountWidget`  | Avec données, un seul film, sans période, vide, chargement, erreur |
+| Story                          | États                                                              |
+| ------------------------------ | ------------------------------------------------------------------ |
+| `Pages/DashboardPage`          | Sans widgets                                                       |
+| `Components/MovieItem`         | Avec affiche, sans affiche                                         |
+| `Components/MovieDetailCard`   | Complet, minimal                                                   |
+| `Components/ThemeToggle`       | Thème clair, thème sombre                                          |
+| `Widgets/MoviesCountWidget`    | Avec données, un seul film, sans période, vide, chargement, erreur |
+| `Widgets/AverageRuntimeWidget` | Nominal (107 min), mobile, sans données, chargement, erreur        |
 
 ### Widgets du tableau de bord
 
@@ -271,6 +272,14 @@ Les widgets s'appuient sur le composant commun `DashboardWidget` (`src/front-end
 Widgets disponibles :
 
 - **Films en base** (`MoviesCountWidget`) : nombre de films enregistrés et période de sortie couverte (`count`, `firstYear`, `lastYear`). Un chargement réussi sans aucun film affiche l'état vide.
+- **Durée moyenne** (`AverageRuntimeWidget`) : durée moyenne des films, en minutes.
+
+  | Propriété        | Type                            | Description                                                                                        |
+  | ---------------- | ------------------------------- | -------------------------------------------------------------------------------------------------- |
+  | `status`         | `WidgetStatus`                  | État d'affichage du widget.                                                                        |
+  | `averageRuntime` | `number` ou `null`, facultative | Durée moyenne en minutes, calculée sur les durées valides uniquement et arrondie à la minute près. |
+
+  Une durée absente, nulle, négative ou invalide n'est jamais affichée comme zéro : le widget affiche son état vide.
 
 ### Tester les stories
 

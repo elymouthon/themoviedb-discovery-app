@@ -39,3 +39,16 @@
   flex-direction: column;
   gap: 6px;
 }
+
+/* Keep the widget labels readable on small screens. */
+@media (max-width: 600px) {
+  .dashboard-widget {
+    min-height: 0;
+    padding: 16px 18px;
+  }
+
+  .dashboard-widget-title {
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+  }
+}
