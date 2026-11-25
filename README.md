@@ -8,7 +8,7 @@ Application web de découverte de films qui s'appuie sur l'API de [The Movie Dat
 - Fiche détaillée pour chaque film.
 - Page « Tableau de bord » des films (`/dashboard`), accessible depuis la barre
   de navigation ; elle affiche un état vide en attendant les widgets.
-- Widgets « Films en base », « Durée moyenne », « Note moyenne », « Pays le plus représenté » et « Film le mieux noté » pour le tableau de bord, visibles dans Storybook.
+- Widgets « Films en base », « Durée moyenne », « Note moyenne », « Pays le plus représenté », « Film le mieux noté » et « Film le plus populaire » pour le tableau de bord, visibles dans Storybook.
 - Pages « À propos » et « Page introuvable ».
 - Storybook pour visualiser les composants et leurs différents états.
 - Thème clair ou sombre, conservé dans le navigateur.
@@ -249,17 +249,18 @@ La barre d'outils propose un sélecteur **Thème** pour afficher les composants 
 
 ### Stories disponibles
 
-| Story                          | États                                                                                                                        |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `Pages/DashboardPage`          | Sans widgets                                                                                                                 |
-| `Components/MovieItem`         | Avec affiche, sans affiche                                                                                                   |
-| `Components/MovieDetailCard`   | Complet, minimal                                                                                                             |
-| `Components/ThemeToggle`       | Thème clair, thème sombre                                                                                                    |
-| `Widgets/MoviesCountWidget`    | Avec données, un seul film, sans période, vide, chargement, erreur                                                           |
-| `Widgets/AverageRuntimeWidget` | Nominal (107 min), mobile, sans données, chargement, erreur                                                                  |
-| `Widgets/AverageRatingWidget`  | Nominal (6,78 / 10), note zéro, sans notes, chargement, erreur                                                               |
-| `Widgets/TopCountryWidget`     | Nominal (United States of America, 725 films), nom long, aucun pays, chargement, erreur                                      |
-| `Widgets/TopRatedMovieWidget`  | Nominal (9,1 / 10), affiche absente, affiche inaccessible, titre long et année inconnue, aucun film noté, chargement, erreur |
+| Story                            | États                                                                                                                        |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `Pages/DashboardPage`            | Sans widgets                                                                                                                 |
+| `Components/MovieItem`           | Avec affiche, sans affiche                                                                                                   |
+| `Components/MovieDetailCard`     | Complet, minimal                                                                                                             |
+| `Components/ThemeToggle`         | Thème clair, thème sombre                                                                                                    |
+| `Widgets/MoviesCountWidget`      | Avec données, un seul film, sans période, vide, chargement, erreur                                                           |
+| `Widgets/AverageRuntimeWidget`   | Nominal (107 min), mobile, sans données, chargement, erreur                                                                  |
+| `Widgets/AverageRatingWidget`    | Nominal (6,78 / 10), note zéro, sans notes, chargement, erreur                                                               |
+| `Widgets/TopCountryWidget`       | Nominal (United States of America, 725 films), nom long, aucun pays, chargement, erreur                                      |
+| `Widgets/TopRatedMovieWidget`    | Nominal (9,1 / 10), affiche absente, affiche inaccessible, titre long et année inconnue, aucun film noté, chargement, erreur |
+| `Widgets/MostPopularMovieWidget` | Nominal (1 036,49 popularité), affiche absente, valeur inconnue, titre long, chargement, erreur                              |
 
 ### Widgets du tableau de bord
 
@@ -319,6 +320,18 @@ Widgets disponibles :
   | `rating`      | `number` ou `null`, facultative | Note TMDB du film, affichée au format français avec une décimale et l'échelle `/ 10` (par exemple « 9,1 / 10 »). |
 
   Sans titre, ou avec une note absente, hors de l'échelle 0 à 10 ou invalide, le widget affiche l'état « Aucun film noté ». Une affiche absente ou qui ne se charge pas est remplacée par un cadre « Affiche indisponible », annoncé aux lecteurs d'écran.
+
+- **Film le plus populaire** (`MostPopularMovieWidget`) : affiche, titre, année et indice de popularité TMDB du film le plus populaire, tels qu'ils sont fournis.
+
+  | Propriété     | Type                            | Description                                                                                                                                   |
+  | ------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `status`      | `WidgetStatus`                  | État d'affichage du widget.                                                                                                                   |
+  | `title`       | `string` ou `null`, facultative | Titre du film, affiché en entier : un titre long passe à la ligne.                                                                            |
+  | `releaseYear` | `number` ou `null`, facultative | Année de sortie ; « Année inconnue » est affiché lorsqu'elle est absente.                                                                     |
+  | `posterPath`  | `string` ou `null`, facultative | Chemin TMDB de l'affiche (par exemple `/abc.jpg`).                                                                                            |
+  | `popularity`  | `number` ou `null`, facultative | Indice de popularité TMDB, affiché au format français avec deux décimales et le libellé « popularité » (par exemple « 1 036,49 popularité »). |
+
+  L'indice de popularité n'a pas de maximum : il n'est présenté ni comme une note sur 10 ni comme un nombre de votes. Une popularité absente, négative ou invalide est affichée « Popularité inconnue », sans masquer le film. Sans titre, le widget affiche l'état vide.
 
 ### Tester les stories
 
