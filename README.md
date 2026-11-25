@@ -8,7 +8,7 @@ Application web de découverte de films qui s'appuie sur l'API de [The Movie Dat
 - Fiche détaillée pour chaque film.
 - Page « Tableau de bord » des films (`/dashboard`), accessible depuis la barre
   de navigation ; elle affiche un état vide en attendant les widgets.
-- Widgets « Films en base », « Durée moyenne », « Note moyenne » et « Pays le plus représenté » pour le tableau de bord, visibles dans Storybook.
+- Widgets « Films en base », « Durée moyenne », « Note moyenne », « Pays le plus représenté » et « Film le mieux noté » pour le tableau de bord, visibles dans Storybook.
 - Pages « À propos » et « Page introuvable ».
 - Storybook pour visualiser les composants et leurs différents états.
 - Thème clair ou sombre, conservé dans le navigateur.
@@ -249,16 +249,17 @@ La barre d'outils propose un sélecteur **Thème** pour afficher les composants 
 
 ### Stories disponibles
 
-| Story                          | États                                                                                   |
-| ------------------------------ | --------------------------------------------------------------------------------------- |
-| `Pages/DashboardPage`          | Sans widgets                                                                            |
-| `Components/MovieItem`         | Avec affiche, sans affiche                                                              |
-| `Components/MovieDetailCard`   | Complet, minimal                                                                        |
-| `Components/ThemeToggle`       | Thème clair, thème sombre                                                               |
-| `Widgets/MoviesCountWidget`    | Avec données, un seul film, sans période, vide, chargement, erreur                      |
-| `Widgets/AverageRuntimeWidget` | Nominal (107 min), mobile, sans données, chargement, erreur                             |
-| `Widgets/AverageRatingWidget`  | Nominal (6,78 / 10), note zéro, sans notes, chargement, erreur                          |
-| `Widgets/TopCountryWidget`     | Nominal (United States of America, 725 films), nom long, aucun pays, chargement, erreur |
+| Story                          | États                                                                                                                        |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `Pages/DashboardPage`          | Sans widgets                                                                                                                 |
+| `Components/MovieItem`         | Avec affiche, sans affiche                                                                                                   |
+| `Components/MovieDetailCard`   | Complet, minimal                                                                                                             |
+| `Components/ThemeToggle`       | Thème clair, thème sombre                                                                                                    |
+| `Widgets/MoviesCountWidget`    | Avec données, un seul film, sans période, vide, chargement, erreur                                                           |
+| `Widgets/AverageRuntimeWidget` | Nominal (107 min), mobile, sans données, chargement, erreur                                                                  |
+| `Widgets/AverageRatingWidget`  | Nominal (6,78 / 10), note zéro, sans notes, chargement, erreur                                                               |
+| `Widgets/TopCountryWidget`     | Nominal (United States of America, 725 films), nom long, aucun pays, chargement, erreur                                      |
+| `Widgets/TopRatedMovieWidget`  | Nominal (9,1 / 10), affiche absente, affiche inaccessible, titre long et année inconnue, aucun film noté, chargement, erreur |
 
 ### Widgets du tableau de bord
 
@@ -272,6 +273,8 @@ Les widgets s'appuient sur le composant commun `DashboardWidget` (`src/front-end
 | `success` | Contenu propre au widget.                                   |
 
 Pour afficher leur contenu, les widgets utilisent les classes communes `dashboard-widget-value` (valeur principale), `dashboard-widget-label` (texte principal, comme un nom de pays, qui passe à la ligne s'il est long), `dashboard-widget-unit` (unité) et `dashboard-widget-caption` (précision sous la valeur), définies dans `DashboardWidget.css`.
+
+Les widgets qui mettent un film en avant utilisent le composant commun `MovieHighlight` (`src/front-end/components/MovieHighlight/`). Il affiche l'affiche du film (ou un remplacement explicite si elle est absente ou ne se charge pas), son titre, son année de sortie (ou « Année inconnue ») et l'indicateur propre au widget.
 
 Widgets disponibles :
 
@@ -304,6 +307,18 @@ Widgets disponibles :
   | `movieCount`  | `number` ou `null`, facultative | Nombre de films associés au pays, affiché tel qu'il est fourni avec l'unité « films ». Un film coproduit par plusieurs pays est compté pour chacun d'eux par la source de données ; le composant ne recompte pas ces associations. |
 
   Sans nom de pays, ou avec un nombre de films absent, nul ou invalide, le widget affiche l'état vide.
+
+- **Film le mieux noté** (`TopRatedMovieWidget`) : affiche, titre, année et note du film le mieux noté, tels qu'ils sont fournis.
+
+  | Propriété     | Type                            | Description                                                                                                      |
+  | ------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+  | `status`      | `WidgetStatus`                  | État d'affichage du widget.                                                                                      |
+  | `title`       | `string` ou `null`, facultative | Titre du film, affiché en entier : un titre long passe à la ligne.                                               |
+  | `releaseYear` | `number` ou `null`, facultative | Année de sortie ; « Année inconnue » est affiché lorsqu'elle est absente.                                        |
+  | `posterPath`  | `string` ou `null`, facultative | Chemin TMDB de l'affiche (par exemple `/abc.jpg`).                                                               |
+  | `rating`      | `number` ou `null`, facultative | Note TMDB du film, affichée au format français avec une décimale et l'échelle `/ 10` (par exemple « 9,1 / 10 »). |
+
+  Sans titre, ou avec une note absente, hors de l'échelle 0 à 10 ou invalide, le widget affiche l'état « Aucun film noté ». Une affiche absente ou qui ne se charge pas est remplacée par un cadre « Affiche indisponible », annoncé aux lecteurs d'écran.
 
 ### Tester les stories
 
