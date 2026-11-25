@@ -8,6 +8,7 @@ Application web de découverte de films qui s'appuie sur l'API de [The Movie Dat
 - Fiche détaillée pour chaque film.
 - Page « Tableau de bord » des films (`/dashboard`), accessible depuis la barre
   de navigation ; elle affiche un état vide en attendant les widgets.
+- Widget « Films en base » pour le tableau de bord, visible dans Storybook.
 - Pages « À propos » et « Page introuvable ».
 - Storybook pour visualiser les composants et leurs différents états.
 - Thème clair ou sombre, conservé dans le navigateur.
@@ -248,12 +249,42 @@ La barre d'outils propose un sélecteur **Thème** pour afficher les composants 
 
 ### Stories disponibles
 
-| Story                        | États                      |
-| ---------------------------- | -------------------------- |
-| `Pages/DashboardPage`        | Sans widgets               |
-| `Components/MovieItem`       | Avec affiche, sans affiche |
-| `Components/MovieDetailCard` | Complet, minimal           |
-| `Components/ThemeToggle`     | Thème clair, thème sombre  |
+| Story                        | États                                                              |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `Pages/DashboardPage`        | Sans widgets                                                       |
+| `Components/MovieItem`       | Avec affiche, sans affiche                                         |
+| `Components/MovieDetailCard` | Complet, minimal                                                   |
+| `Components/ThemeToggle`     | Thème clair, thème sombre                                          |
+| `Widgets/MoviesCountWidget`  | Avec données, un seul film, sans période, vide, chargement, erreur |
+
+### Widgets du tableau de bord
+
+Les widgets s'appuient sur le composant commun `DashboardWidget` (`src/front-end/components/DashboardWidget/`). Il affiche le titre du widget et gère ses états grâce à la propriété `status` :
+
+| `status`  | Affichage                                                   |
+| --------- | ----------------------------------------------------------- |
+| `loading` | Message « Chargement… » annoncé aux lecteurs d'écran.       |
+| `error`   | Message d'erreur (`errorMessage`) annoncé comme une alerte. |
+| `empty`   | Message d'absence de données (`emptyMessage`).              |
+| `success` | Contenu propre au widget.                                   |
+
+Widgets disponibles :
+
+- **Films en base** (`MoviesCountWidget`) : nombre de films enregistrés et période de sortie couverte (`count`, `firstYear`, `lastYear`). Un chargement réussi sans aucun film affiche l'état vide.
+
+### Tester les stories
+
+Les stories peuvent être rendues dans les tests Vitest avec `composeStories`, qui leur applique la configuration de `.storybook/preview.tsx`. Ces tests sont placés dans un fichier `NomDuComposant.stories.test.tsx` :
+
+```tsx
+import { composeStories } from '@storybook/react-vite';
+import preview from '../../../../.storybook/preview';
+import * as stories from './MonWidget.stories';
+
+const { AvecDonnees } = composeStories(stories, preview);
+
+render(<AvecDonnees />);
+```
 
 ### Ajouter une story
 

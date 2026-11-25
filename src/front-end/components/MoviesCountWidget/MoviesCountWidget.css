@@ -1,0 +1,19 @@
+/* Dashboard widget "Films en base" */
+.movies-count-value {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.movies-count-unit {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.movies-count-period {
+  margin: 0;
+  color: var(--text-muted);
+}

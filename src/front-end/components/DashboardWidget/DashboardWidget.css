@@ -1,0 +1,41 @@
+/* Card shared by the dashboard widgets */
+.dashboard-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 150px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgb(16 47 76 / 8%);
+}
+
+.dashboard-widget-title {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-widget-message {
+  margin: auto 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.dashboard-widget-error .dashboard-widget-message {
+  color: #b3261e;
+}
+
+:root[data-theme='dark'] .dashboard-widget-error .dashboard-widget-message {
+  color: #ffb4ab;
+}
+
+.dashboard-widget-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
